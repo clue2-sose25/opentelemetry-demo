@@ -463,13 +463,13 @@ services:
 
   # Product Catalog service
   product-catalog:
-    image: ${IMAGE_NAME}:${DEMO_VERSION}-product-catalog
+    image: ${IMAGE_NAME}:${DEMO_VERSION}-product-catalog-rust
     container_name: product-catalog
     build:
       context: ./
       dockerfile: ${PRODUCT_CATALOG_DOCKERFILE}
       cache_from:
-        - ${IMAGE_NAME}:${IMAGE_VERSION}-product-catalog
+        - ${IMAGE_NAME}:${IMAGE_VERSION}-product-catalog-rust
     deploy:
       resources:
         limits:
