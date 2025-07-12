@@ -463,13 +463,13 @@ services:
 
   # Product Catalog service
   product-catalog:
-    image: ${IMAGE_NAME}:${DEMO_VERSION}-product-catalog-rust
+    image: ${IMAGE_NAME}:${DEMO_VERSION}-product-catalog
     container_name: product-catalog
     build:
       context: ./
       dockerfile: ${PRODUCT_CATALOG_DOCKERFILE}
       cache_from:
-        - ${IMAGE_NAME}:${IMAGE_VERSION}-product-catalog-rust
+        - ${IMAGE_NAME}:${IMAGE_VERSION}-product-catalog
     deploy:
       resources:
         limits:
@@ -488,7 +488,7 @@ services:
       - OTEL_RESOURCE_ATTRIBUTES
       - OTEL_SERVICE_NAME=product-catalog
     volumes:
-      - ./src/product-catalog/products:/usr/src/app/products
+      - ./src/product-catalog-go/products:/usr/src/app/products
     depends_on:
       otel-collector:
         condition: service_started
