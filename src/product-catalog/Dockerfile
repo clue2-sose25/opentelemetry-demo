@@ -26,9 +26,9 @@ RUN if [ "${TARGETPLATFORM}" = "${BUILDPLATFORM}" ] ; then \
 
 WORKDIR /app/
 
-COPY /src/product-catalog-rust/ /app/
+COPY /src/product-catalog/ /app/
 COPY /pb/ /app/proto/
-COPY /src/product-catalog/products/ /app/products/
+COPY /src/product-catalog-go/products/ /app/products/
 
 # Compile with same pattern as shipping
 RUN if [ "${TARGETPLATFORM}" = "${BUILDPLATFORM}" ] ; then \
