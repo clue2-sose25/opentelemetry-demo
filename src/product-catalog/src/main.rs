@@ -14,6 +14,7 @@ use telemetry::{init_logger, init_reqwest_tracing, init_tracer};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    info!("Starting Rust Product Catalog Service");
     let (mut health_reporter, health_service) = tonic_health::server::health_reporter();
     health_reporter
         .set_serving::<ProductCatalogServiceServer<ProductCatalogServer>>()
