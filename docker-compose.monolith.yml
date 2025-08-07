@@ -14,9 +14,6 @@ networks:
     driver: bridge
 
 services:
-  # ******************
-  # Core Demo Services
-  # ******************
   otel:
     image: ${IMAGE_NAME}:${DEMO_VERSION}-mono
     container_name: mono
@@ -98,65 +95,6 @@ services:
       image-provider:
         condition: service_started
     logging: *logging
-  # Accounting service
-  accounting:
-    image: ${IMAGE_NAME}:${DEMO_VERSION}-accounting
-    container_name: accounting
-    build:
-      context: ./
-      dockerfile: ${ACCOUNTING_DOCKERFILE}
-      cache_from:
-        - ${IMAGE_NAME}:${IMAGE_VERSION}-accounting
-    deploy:
-      resources:
-        limits:
-          memory: 120M
-    restart: unless-stopped
-    environment:
-      - KAFKA_ADDR
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://${OTEL_COLLECTOR_HOST}:${OTEL_COLLECTOR_PORT_HTTP}
-      - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
-      - OTEL_RESOURCE_ATTRIBUTES
-      - OTEL_SERVICE_NAME=accounting
-    depends_on:
-      otel-collector:
-        condition: service_started
-      kafka:
-        condition: service_healthy
-    logging: *logging
-
-  # Fraud Detection service
-  fraud-detection:
-    image: ${IMAGE_NAME}:${DEMO_VERSION}-fraud-detection
-    container_name: fraud-detection
-    build:
-      context: ./
-      dockerfile: ${FRAUD_DOCKERFILE}
-      cache_from:
-        - ${IMAGE_NAME}:${IMAGE_VERSION}-fraud-detection
-      args:
-        OTEL_JAVA_AGENT_VERSION: ${OTEL_JAVA_AGENT_VERSION}
-    deploy:
-      resources:
-        limits:
-          memory: 300M
-    restart: unless-stopped
-    environment:
-      - FLAGD_HOST
-      - FLAGD_PORT
-      - KAFKA_ADDR
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://${OTEL_COLLECTOR_HOST}:${OTEL_COLLECTOR_PORT_HTTP}
-      - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
-      - OTEL_INSTRUMENTATION_KAFKA_EXPERIMENTAL_SPAN_ATTRIBUTES=true
-      - OTEL_INSTRUMENTATION_MESSAGING_EXPERIMENTAL_RECEIVE_TELEMETRY_ENABLED=true
-      - OTEL_RESOURCE_ATTRIBUTES
-      - OTEL_SERVICE_NAME=fraud-detection
-    depends_on:
-      otel-collector:
-        condition: service_started
-      kafka:
-        condition: service_healthy
-    logging: *logging
 
   # Frontend Proxy (Envoy)
   frontend-proxy:
@@ -197,13 +135,9 @@ services:
     depends_on:
       otel:
         condition: service_started
-      load-generator:
-        condition: service_started
       jaeger:
         condition: service_started
       grafana:
-        condition: service_started
-      flagd-ui:
         condition: service_started
     dns_search: ""
 
@@ -234,43 +168,6 @@ services:
         condition: service_started
     logging: *logging
 
-  # Load Generator
-  load-generator:
-    image: ${IMAGE_NAME}:${DEMO_VERSION}-load-generator
-    container_name: load-generator
-    build:
-      context: ./
-      dockerfile: ${LOAD_GENERATOR_DOCKERFILE}
-      cache_from:
-        - ${IMAGE_NAME}:${IMAGE_VERSION}-load-generator
-    deploy:
-      resources:
-        limits:
-          memory: 1500M
-    restart: unless-stopped
-    ports:
-      - "${LOCUST_WEB_PORT}"
-    environment:
-      - LOCUST_WEB_PORT
-      - LOCUST_USERS
-      - LOCUST_HOST
-      - LOCUST_HEADLESS
-      - LOCUST_AUTOSTART
-      - LOCUST_BROWSER_TRAFFIC_ENABLED=true
-      - OTEL_EXPORTER_OTLP_ENDPOINT
-      - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
-      - OTEL_RESOURCE_ATTRIBUTES
-      - OTEL_SERVICE_NAME=load-generator
-      - PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
-      - LOCUST_WEB_HOST=0.0.0.0
-      - FLAGD_HOST
-      - FLAGD_OFREP_PORT
-    depends_on:
-      otel:
-        condition: service_started
-      flagd:
-        condition: service_started
-    logging: *logging
 
   # ******************
   # Dependent Services
@@ -283,7 +180,6 @@ services:
       resources:
         limits:
           memory: 75M
-    restart: unless-stopped
     environment:
       - FLAGD_OTEL_COLLECTOR_URI=${OTEL_COLLECTOR_HOST}:${OTEL_COLLECTOR_PORT_GRPC}
       - FLAGD_METRICS_EXPORTER=otel
@@ -302,69 +198,6 @@ services:
       - ./src/flagd:/etc/flagd
     logging:
       *logging
-
-  # Flagd UI for configuring the feature flag service
-  flagd-ui:
-    image: ${IMAGE_NAME}:${DEMO_VERSION}-flagd-ui
-    container_name: flagd-ui
-    build:
-      context: ./
-      dockerfile: ${FLAGD_UI_DOCKERFILE}
-    deploy:
-      resources:
-        limits:
-          memory: 100M
-    restart: unless-stopped
-    environment:
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://${OTEL_COLLECTOR_HOST}:${OTEL_COLLECTOR_PORT_HTTP}
-      - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
-      - OTEL_RESOURCE_ATTRIBUTES
-      - OTEL_SERVICE_NAME=flagd-ui
-    ports:
-      - "${FLAGD_UI_PORT}"
-    depends_on:
-      otel-collector:
-        condition: service_started
-      flagd:
-        condition: service_started
-    volumes:
-      - ./src/flagd:/app/data
-
-  # Kafka used by Checkout, Accounting, and Fraud Detection services
-  kafka:
-    image: ${IMAGE_NAME}:${DEMO_VERSION}-kafka
-    container_name: kafka
-    build:
-      context: ./
-      dockerfile: ${KAFKA_DOCKERFILE}
-      cache_from:
-        - ${IMAGE_NAME}:${IMAGE_VERSION}-kafka
-      args:
-        OTEL_JAVA_AGENT_VERSION: ${OTEL_JAVA_AGENT_VERSION}
-    deploy:
-      resources:
-        limits:
-          memory: 620M
-    restart: unless-stopped
-    environment:
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
-      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
-      - KAFKA_LISTENERS=CONTROLLER://kafka:9093,PLAINTEXT://kafka:9092
-      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://${OTEL_COLLECTOR_HOST}:${OTEL_COLLECTOR_PORT_HTTP}
-      - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
-      - OTEL_RESOURCE_ATTRIBUTES
-      - OTEL_SERVICE_NAME=kafka
-      - KAFKA_HEAP_OPTS=-Xmx400m -Xms400m
-      # Workaround on OSX for https://bugs.openjdk.org/browse/JDK-8345296
-      - _JAVA_OPTIONS
-    healthcheck:
-      test: nc -z kafka 9092
-      start_period: 10s
-      interval: 5s
-      timeout: 60s
-      retries: 10
-    logging: *logging
 
   # Valkey used by Cart service
   valkey-cart:
@@ -389,7 +222,7 @@ services:
     image: ${JAEGERTRACING_IMAGE}
     container_name: jaeger
     command:
-      - "--memory.max-traces=25000"
+      - "--memory.max-traces=5000"
       - "--query.base-path=/jaeger/ui"
       - "--prometheus.server-url=http://${PROMETHEUS_ADDR}"
       - "--prometheus.query.normalize-calls=true"
@@ -397,7 +230,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1200M
+          memory: 400M
     restart: unless-stopped
     ports:
       - "${JAEGER_PORT}"         # Jaeger UI

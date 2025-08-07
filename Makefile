@@ -5,7 +5,6 @@
 # All documents to be used in spell check.
 ALL_DOCS := $(shell find . -type f -name '*.md' -not -path './.github/*' -not -path '*/node_modules/*' -not -path '*/_build/*' -not -path '*/deps/*' -not -path */Pods/* -not -path */.expo/* | sort)
 PWD := $(shell pwd)
-
 TOOLS_DIR := ./internal/tools
 MISSPELL_BINARY=bin/misspell
 MISSPELL = $(TOOLS_DIR)/$(MISSPELL_BINARY)
@@ -202,6 +201,12 @@ start-minimal:
 	@echo "Go to http://localhost:8080/grafana/ for the Grafana UI."
 	@echo "Go to http://localhost:8080/loadgen/ for the Load Generator UI."
 	@echo "Go to https://opentelemetry.io/docs/demo/feature-flags/ to learn how to change feature flags."
+
+.PHONY: start-mono
+start-mono:
+	$(DOCKER_COMPOSE_CMD) $(DOCKER_COMPOSE_ENV) -f docker-compose.monolith.yml up --remove-orphans --detach
+	@echo ""
+	@echo "OpenTelemetry Demo in monolith mode is running."
 
 .PHONY: stop
 stop:
