@@ -5,6 +5,7 @@ plugins {
     id 'idea'
     id 'application'
     id 'com.github.ben-manes.versions' version '0.52.0'
+    id 'org.graalvm.buildtools.native' version '0.10.4'
 }
 
 repositories {
@@ -140,4 +141,25 @@ task ad(type: CreateStartScripts) {
 applicationDistribution.into('bin') {
     from(ad)
     fileMode = 0755
+}
+
+// GraalVM Native Image configuration
+graalvmNative {
+    agent {
+        defaultMode = "standard"
+    }
+    metadataRepository {
+        enabled = true
+    }
+    binaries {
+        main {
+            imageName = 'ad-service'
+            mainClass = 'oteldemo.AdService'
+            buildArgs.add('--verbose')
+            buildArgs.add('--no-fallback')
+            buildArgs.add('-H:+ReportExceptionStackTraces')
+            // Minimal configuration - let GraalVM handle most things automatically
+            buildArgs.add('--initialize-at-run-time=io.grpc.netty,io.netty')
+        }
+    }
 }

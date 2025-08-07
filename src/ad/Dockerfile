@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-FROM --platform=${BUILDPLATFORM} eclipse-temurin:21-jdk AS builder
+FROM --platform=${BUILDPLATFORM} ghcr.io/graalvm/graalvm-community:21-ol9 AS builder
 ARG _JAVA_OPTIONS
 WORKDIR /usr/src/app/
 
@@ -16,20 +16,21 @@ RUN ./gradlew downloadRepos
 COPY ./src/ad/ ./
 COPY ./pb/ ./proto
 RUN chmod +x ./gradlew
-RUN ./gradlew installDist -PprotoSourceDir=./proto
+# Build native image instead of regular distribution
+RUN ./gradlew nativeCompile -PprotoSourceDir=./proto
 
 # -----------------------------------------------------------------------------
 
-FROM eclipse-temurin:21-jre
+FROM ghcr.io/graalvm/graalvm-community:21-ol9
 
 ARG OTEL_JAVA_AGENT_VERSION
 ARG _JAVA_OPTIONS
 
 WORKDIR /usr/src/app/
 
-COPY --from=builder /usr/src/app/ ./
-ADD --chmod=644 https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v$OTEL_JAVA_AGENT_VERSION/opentelemetry-javaagent.jar /usr/src/app/opentelemetry-javaagent.jar
-ENV JAVA_TOOL_OPTIONS=-javaagent:/usr/src/app/opentelemetry-javaagent.jar
+# Copy the native executable instead of JAR files
+COPY --from=builder /usr/src/app/build/native/nativeCompile/ad-service ./ad-service
+# Note: Native images don't use Java agents, so we skip the OpenTelemetry agent
 
 EXPOSE ${AD_PORT}
-ENTRYPOINT [ "./build/install/opentelemetry-demo-ad/bin/Ad" ]
+ENTRYPOINT [ "./ad-service" ]
