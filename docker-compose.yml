@@ -508,7 +508,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 40M
+          memory: 256M
     restart: unless-stopped
     ports:
       - "${QUOTE_PORT}"

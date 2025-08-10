@@ -1,35 +1,23 @@
-# Copyright The OpenTelemetry Authors
-# SPDX-License-Identifier: Apache-2.0
+# Build stage
+FROM maven:3.9.5-eclipse-temurin-21 AS build
 
+WORKDIR /app
+COPY pom.xml .
+COPY src ./src
 
-FROM php:8.3-cli AS base
+# Build the application
+RUN mvn clean package -DskipTests
 
-ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
-RUN chmod +x /usr/local/bin/install-php-extensions \
-  && install-php-extensions \
-    opcache \
-    pcntl \
-    protobuf \
-    opentelemetry
+# Runtime stage
+FROM eclipse-temurin:21-jre
 
-WORKDIR /var/www
-CMD ["php", "public/index.php"]
-USER www-data
-EXPOSE ${QUOTE_PORT}
+WORKDIR /app
 
-FROM composer:2.7 AS vendor
+# Copy the built JAR from the build stage
+COPY --from=build /app/target/quote-service-knative-1.0.0.jar app.jar
 
-WORKDIR /tmp/
-COPY ./src/quote/composer.json .
+# Expose the port that the application runs on
+EXPOSE 8080
 
-RUN composer install \
-    --ignore-platform-reqs \
-    --no-interaction \
-    --no-plugins \
-    --no-scripts \
-    --no-dev \
-    --prefer-dist
-
-FROM base AS final
-COPY --from=vendor /tmp/vendor/ ./vendor/
-COPY ./src/quote/ /var/www
+# Set the default command to run the application
+ENTRYPOINT ["java", "-jar", "app.jar"]
