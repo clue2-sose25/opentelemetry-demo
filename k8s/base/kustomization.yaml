@@ -1,0 +1,25 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- namespace.yaml
+- ad.yaml
+- cart.yaml
+- checkout.yaml
+- currency.yaml
+- email.yaml
+- flagd.yaml
+- frontend.yaml
+- frontend-proxy.yaml
+- image-provider.yaml
+- load-generator.yaml
+- otel-collector.yaml
+- payment.yaml
+- product-catalog.yaml
+- quote.yaml
+- recommendation.yaml
+- shipping.yaml
+- valkey-cart.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: otel-demo
