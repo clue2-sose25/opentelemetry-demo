@@ -1,0 +1,85 @@
+version: v2beta1
+name: otel-demo
+
+vars:
+  REGISTRY:
+    source: env
+    default: ghcr.io/ise-tu-berlin/sustainable-otel
+
+images:
+  cart:
+    image: ${REGISTRY}/otel-cart
+    dockerfile: src/cart/src/Dockerfile
+    context: .
+  checkout:
+    image: ${REGISTRY}/otel-checkout
+    dockerfile: src/checkout/Dockerfile
+    context: .
+  currency:
+    image: ${REGISTRY}/otel-currency
+    dockerfile: src/currency/Dockerfile
+    context: .
+  email:
+    image: ${REGISTRY}/otel-email
+    dockerfile: src/email/Dockerfile
+    context: .
+  flagdUi:
+    image: ${REGISTRY}/otel-flagd-ui
+    dockerfile: src/flagd-ui/Dockerfile
+    context: .
+  frontend:
+    image: ${REGISTRY}/otel-frontend
+    dockerfile: src/frontend/Dockerfile
+    context: .
+  frontendProxy:
+    image: ${REGISTRY}/otel-frontend-proxy
+    dockerfile: src/frontend-proxy/Dockerfile
+    context: .
+  imageProvider:
+    image: ${REGISTRY}/otel-image-provider
+    dockerfile: src/image-provider/Dockerfile
+    context: .
+  loadGenerator:
+    image: ${REGISTRY}/otel-load-generator
+    dockerfile: src/load-generator/Dockerfile
+    context: .
+  payment:
+    image: ${REGISTRY}/otel-payment
+    dockerfile: src/payment/Dockerfile
+    context: .
+  productCatalog:
+    image: ${REGISTRY}/otel-product-catalog
+    dockerfile: src/product-catalog/Dockerfile
+    context: .
+  quote:
+    image: ${REGISTRY}/otel-quote
+    dockerfile: src/quote/Dockerfile
+    context: .
+  recommendation:
+    image: ${REGISTRY}/otel-recommendation
+    dockerfile: src/recommendation/Dockerfile
+    context: .
+  shipping:
+    image: ${REGISTRY}/otel-shipping
+    dockerfile: src/shipping/Dockerfile
+    context: .
+
+deployments:
+  otel-demo:
+    kubectl:
+      kustomize: true
+      manifests:
+      - k8s/overlays/local
+
+dev:
+  frontendProxy:
+    imageSelector: ${REGISTRY}/otel-frontend-proxy
+    ports:
+    - port: "8080"
+
+profiles:
+- name: remote
+  patches:
+  - op: replace
+    path: deployments.otel-demo.kubectl.manifests[0]
+    value: k8s/overlays/remote
