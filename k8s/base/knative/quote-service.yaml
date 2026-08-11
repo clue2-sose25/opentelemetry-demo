@@ -1,8 +1,9 @@
 # Knative Service for the quote tactic: unlike every other component, quote
 # is not part of the kubectl-managed Deployment set - it scales to zero and
-# is invoked on demand. Requires Knative Serving (+ a networking layer such
-# as Kourier) already installed in the cluster; see otel-helm/up.sh for the
-# one-time cluster bootstrap this branch was originally developed against.
+# is invoked on demand. Requires Knative Serving + Kourier already installed
+# in the cluster; devspace.yaml's before:deploy hook
+# (k8s/scripts/install-knative-local.sh) bootstraps this on a local kind
+# cluster automatically.
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:

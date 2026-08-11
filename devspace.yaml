@@ -64,6 +64,12 @@ images:
     dockerfile: src/shipping/Dockerfile
     context: .
 
+hooks:
+- name: install-knative-local
+  events: ["before:deploy"]
+  command: bash
+  args: ["k8s/scripts/install-knative-local.sh"]
+
 deployments:
   otel-demo:
     kubectl:
