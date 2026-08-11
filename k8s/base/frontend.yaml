@@ -1,0 +1,308 @@
+# The monolith tactic: ad, cart, checkout, currency, email, payment,
+# product-catalog, quote, recommendation and shipping all run as supervisord
+# processes inside the single "frontend" container (src/mono, src/Dockerfile)
+# instead of as separate Deployments. Each still listens on its own port
+# within that one pod, so the frontend Service exposes all of them and a set
+# of same-named alias Services (ad, cart, ...) forward to it - this lets
+# frontend-proxy keep resolving upstreams like "ad:9555" without needing its
+# own routing changes for this tactic.
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  labels:
+    opentelemetry.io/name: frontend
+    app.kubernetes.io/instance: opentelemetry-demo
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/version: "2.0.2"
+    app.kubernetes.io/part-of: opentelemetry-demo
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    name: tcp-service
+    targetPort: 8080
+  - port: 9555
+    name: tcp-ad
+    targetPort: 9555
+  - port: 7070
+    name: tcp-cart
+    targetPort: 7070
+  - port: 5050
+    name: tcp-checkout
+    targetPort: 5050
+  - port: 7001
+    name: tcp-currency
+    targetPort: 7001
+  - port: 3550
+    name: tcp-product-catalog
+    targetPort: 3550
+  - port: 6060
+    name: tcp-email
+    targetPort: 6060
+  - port: 9001
+    name: tcp-recommendation
+    targetPort: 9001
+  - port: 50050
+    name: tcp-shipping
+    targetPort: 50050
+  selector:
+    opentelemetry.io/name: frontend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ad
+spec:
+  type: ClusterIP
+  ports:
+  - port: 9555
+    name: tcp-ad
+    targetPort: 9555
+  selector:
+    opentelemetry.io/name: frontend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cart
+spec:
+  type: ClusterIP
+  ports:
+  - port: 7070
+    name: tcp-cart
+    targetPort: 7070
+  selector:
+    opentelemetry.io/name: frontend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: checkout
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5050
+    name: tcp-checkout
+    targetPort: 5050
+  selector:
+    opentelemetry.io/name: frontend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: currency
+spec:
+  type: ClusterIP
+  ports:
+  - port: 7001
+    name: tcp-currency
+    targetPort: 7001
+  selector:
+    opentelemetry.io/name: frontend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-catalog
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3550
+    name: tcp-product-catalog
+    targetPort: 3550
+  selector:
+    opentelemetry.io/name: frontend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: email
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6060
+    name: tcp-email
+    targetPort: 6060
+  selector:
+    opentelemetry.io/name: frontend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: recommendation
+spec:
+  type: ClusterIP
+  ports:
+  - port: 9001
+    name: tcp-recommendation
+    targetPort: 9001
+  selector:
+    opentelemetry.io/name: frontend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shipping
+spec:
+  type: ClusterIP
+  ports:
+  - port: 50050
+    name: tcp-shipping
+    targetPort: 50050
+  selector:
+    opentelemetry.io/name: frontend
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    opentelemetry.io/name: frontend
+    app.kubernetes.io/instance: opentelemetry-demo
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/version: "2.0.2"
+    app.kubernetes.io/part-of: opentelemetry-demo
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      opentelemetry.io/name: frontend
+  template:
+    metadata:
+      labels:
+        opentelemetry.io/name: frontend
+        app.kubernetes.io/instance: opentelemetry-demo
+        app.kubernetes.io/component: frontend
+        app.kubernetes.io/name: frontend
+    spec:
+      serviceAccountName: opentelemetry-demo
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+        runAsNonRoot: false
+      containers:
+        - name: frontend
+          image: 'ghcr.io/ise-tu-berlin/sustainable-otel/otel-frontend:latest'
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: service
+            - containerPort: 9555
+              name: ad
+            - containerPort: 7070
+              name: cart
+            - containerPort: 5050
+              name: checkout
+            - containerPort: 7001
+              name: currency
+            - containerPort: 3550
+              name: product-catalog
+            - containerPort: 6060
+              name: email
+            - containerPort: 9001
+              name: recommendation
+            - containerPort: 50050
+              name: shipping
+          env:
+            - name: OTEL_SERVICE_NAME
+              value: otel
+            - name: OTEL_COLLECTOR_NAME
+              value: otel-collector
+            - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+              value: cumulative
+            - name: FRONTEND_PORT
+              value: "8080"
+            - name: FRONTEND_ADDR
+              value: "frontend:8080"
+            - name: FRONTEND_HOST
+              value: frontend
+            - name: AD_ADDR
+              value: "127.0.0.1:9555"
+            - name: AD_PORT
+              value: "9555"
+            - name: CART_ADDR
+              value: "127.0.0.1:7070"
+            - name: CART_PORT
+              value: "7070"
+            - name: CHECKOUT_ADDR
+              value: "127.0.0.1:5050"
+            - name: CHECKOUT_PORT
+              value: "5050"
+            - name: CURRENCY_ADDR
+              value: "127.0.0.1:7001"
+            - name: CURRENCY_PORT
+              value: "7001"
+            - name: PRODUCT_CATALOG_ADDR
+              value: "127.0.0.1:3550"
+            - name: PRODUCT_CATALOG_PORT
+              value: "3550"
+            - name: PRODUCT_CATALOG_RELOAD_INTERVAL
+              value: "10"
+            - name: EMAIL_ADDR
+              value: "http://127.0.0.1:6060"
+            - name: EMAIL_PORT
+              value: "6060"
+            - name: RECOMMENDATION_ADDR
+              value: "127.0.0.1:9001"
+            - name: RECOMMENDATION_PORT
+              value: "9001"
+            - name: SHIPPING_ADDR
+              value: "127.0.0.1:50050"
+            - name: SHIPPING_PORT
+              value: "50050"
+            - name: PAYMENT_ADDR
+              value: "127.0.0.1:50051"
+            - name: PAYMENT_PORT
+              value: "50051"
+            - name: QUOTE_ADDR
+              value: "http://127.0.0.1:8090"
+            - name: QUOTE_PORT
+              value: "8090"
+            - name: KAFKA_ADDR
+              value: ""
+            - name: FLAGD_HOST
+              value: flagd
+            - name: FLAGD_PORT
+              value: "8013"
+            - name: VALKEY_ADDR
+              value: valkey-cart:6379
+            - name: ASPNETCORE_URLS
+              value: "http://*:$(CART_PORT)"
+            - name: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION
+              value: python
+            - name: APP_ENV
+              value: production
+            - name: VERSION
+              value: "2.0.2"
+            - name: OTEL_COLLECTOR_HOST
+              value: $(OTEL_COLLECTOR_NAME)
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://$(OTEL_COLLECTOR_NAME):4317
+            - name: OTEL_LOGS_EXPORTER
+              value: otlp
+            - name: OTEL_PYTHON_LOG_CORRELATION
+              value: "true"
+            - name: OTEL_PHP_INTERNAL_METRICS_ENABLED
+              value: "true"
+            - name: OTEL_PHP_AUTOLOAD_ENABLED
+              value: "true"
+            - name: WEB_OTEL_SERVICE_NAME
+              value: frontend-web
+            - name: PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+              value: http://localhost:8080/otlp-http/v1/traces
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2
+          resources:
+            limits:
+              memory: 2048Mi
+          volumeMounts:
+            - name: product-catalog-products
+              mountPath: /catalog/products/
+      volumes:
+        - name: product-catalog-products
+          configMap:
+            name: product-catalog-products

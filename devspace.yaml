@@ -1,0 +1,45 @@
+version: v2beta1
+name: otel-demo
+
+vars:
+  REGISTRY:
+    source: env
+    default: ghcr.io/ise-tu-berlin/sustainable-otel
+
+images:
+  frontend:
+    image: ${REGISTRY}/otel-frontend
+    dockerfile: src/Dockerfile
+    context: .
+  frontendProxy:
+    image: ${REGISTRY}/otel-frontend-proxy
+    dockerfile: src/frontend-proxy/Dockerfile
+    context: .
+  imageProvider:
+    image: ${REGISTRY}/otel-image-provider
+    dockerfile: src/image-provider/Dockerfile
+    context: .
+  flagdUi:
+    image: ${REGISTRY}/otel-flagd-ui
+    dockerfile: src/flagd-ui/Dockerfile
+    context: .
+
+deployments:
+  otel-demo:
+    kubectl:
+      kustomize: true
+      manifests:
+      - k8s/overlays/local
+
+dev:
+  frontendProxy:
+    imageSelector: ${REGISTRY}/otel-frontend-proxy
+    ports:
+    - port: "8080"
+
+profiles:
+- name: remote
+  patches:
+  - op: replace
+    path: deployments.otel-demo.kubectl.manifests[0]
+    value: k8s/overlays/remote
