@@ -84,7 +84,7 @@ spec:
             - name: SHIPPING_ADDR
               value: shipping:8080
             - name: KAFKA_ADDR
-              value: kafka:9092
+              value: ""
             - name: FLAGD_HOST
               value: flagd
             - name: FLAGD_PORT
@@ -101,7 +101,7 @@ spec:
         - command:
           - sh
           - -c
-          - until nc -z -v -w30 kafka 9092; do echo waiting for kafka; sleep 2; done;
+          - echo not waiting this time
           image: busybox:latest
           name: wait-for-kafka
       volumes:

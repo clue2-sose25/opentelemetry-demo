@@ -7,10 +7,6 @@ vars:
     default: ghcr.io/ise-tu-berlin/sustainable-otel
 
 images:
-  accounting:
-    image: ${REGISTRY}/otel-accounting
-    dockerfile: src/accounting/Dockerfile
-    context: .
   ad:
     image: ${REGISTRY}/otel-ad
     dockerfile: src/ad/Dockerfile
@@ -35,10 +31,6 @@ images:
     image: ${REGISTRY}/otel-flagd-ui
     dockerfile: src/flagd-ui/Dockerfile
     context: .
-  fraudDetection:
-    image: ${REGISTRY}/otel-fraud-detection
-    dockerfile: src/fraud-detection/Dockerfile
-    context: .
   frontend:
     image: ${REGISTRY}/otel-frontend
     dockerfile: src/frontend/Dockerfile
@@ -50,10 +42,6 @@ images:
   imageProvider:
     image: ${REGISTRY}/otel-image-provider
     dockerfile: src/image-provider/Dockerfile
-    context: .
-  kafka:
-    image: ${REGISTRY}/otel-kafka
-    dockerfile: src/kafka/Dockerfile
     context: .
   loadGenerator:
     image: ${REGISTRY}/otel-load-generator
@@ -70,10 +58,6 @@ images:
   quote:
     image: ${REGISTRY}/otel-quote
     dockerfile: src/quote/Dockerfile
-    context: .
-  recommendation:
-    image: ${REGISTRY}/otel-recommendation
-    dockerfile: src/recommendation/Dockerfile
     context: .
   shipping:
     image: ${REGISTRY}/otel-shipping
