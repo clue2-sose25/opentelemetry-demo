@@ -29,10 +29,36 @@ SERVICES = [
 # cart's Dockerfile sits one level deeper than every other service's.
 DOCKERFILES = {'cart': 'src/cart/src/Dockerfile'}
 
+# Several Dockerfiles declare dependency versions as ARGs with no default
+# (OTEL_JAVA_AGENT_VERSION, OPENTELEMETRY_CPP_VERSION). Upstream's compose path
+# supplies them via `--env-file .env`; DevSpace never did, so those images could
+# not build from this deploy config at all — `ADD .../download/v/...jar` 404s.
+# Read .env instead of duplicating the versions here: upstream bumps them in
+# chore commits, and read_file() makes Tilt reload when it changes.
+def dotenv(path='.env'):
+    env = {}
+    for line in str(read_file(path)).splitlines():
+        line = line.strip()
+        if line.startswith('#') or '=' not in line:
+            continue
+        k, v = line.split('=', 1)
+        env[k.strip()] = v.strip().strip('"')
+    return env
+
+ENV = dotenv()
+JAVA_AGENT = {'OTEL_JAVA_AGENT_VERSION': ENV['OTEL_JAVA_AGENT_VERSION']}
+BUILD_ARGS = {
+    'ad': JAVA_AGENT,
+    'fraud-detection': JAVA_AGENT,
+    'kafka': JAVA_AGENT,
+    'currency': {'OPENTELEMETRY_CPP_VERSION': ENV['OPENTELEMETRY_CPP_VERSION']},
+}
+
 for name in SERVICES:
     docker_build(
         DEFAULT_REGISTRY + '/otel-' + name,
         context='.',
+        build_args=BUILD_ARGS.get(name, {}),
         dockerfile=DOCKERFILES.get(name, 'src/' + name + '/Dockerfile'),
         # Every Dockerfile needs the repo root as context but only COPYs
         # ./src/<name>/ and ./pb/. Without only=, a single edit anywhere
