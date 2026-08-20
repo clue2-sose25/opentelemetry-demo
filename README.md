@@ -44,6 +44,55 @@ your preferred deployment method:
 - [Docker](https://opentelemetry.io/docs/demo/docker_deployment/)
 - [Kubernetes](https://opentelemetry.io/docs/demo/kubernetes_deployment/)
 
+## Local deployment (this fork)
+
+This fork implements sustainability tactics for research, **one per git
+branch**, and deploys to Kubernetes with [Tilt] + Kustomize instead of the
+upstream Helm chart. The upstream docker-compose workflow (`make start`) is
+untouched and still works.
+
+```bash
+tilt up          # build every service, deploy, watch for changes
+tilt ci          # same, but one-shot and non-interactive — use this in scripts
+tilt down        # tear down
+```
+
+The frontend is port-forwarded to <http://localhost:8080>. Everything lands in
+the `otel-demo` namespace. A local cluster can be created with
+`../deploy/local/bootstrap.sh` (kind, plus the Prometheus/Kepler stack the
+experiments read from).
+
+Two environment variables configure a run:
+
+| Variable   | Default                                   | Effect |
+|------------|-------------------------------------------|--------|
+| `OVERLAY`  | `local`                                   | Which `k8s/overlays/<name>` to apply. `remote` adds an Ingress. |
+| `REGISTRY` | `ghcr.io/ise-tu-berlin/sustainable-otel`  | Registry to build and deploy under. Must be a canonical host (`docker.io/tawalaya`, not bare `tawalaya`). |
+
+```bash
+OVERLAY=remote REGISTRY=docker.io/tawalaya tilt up
+```
+
+### Branches
+
+Each branch is one architecture variant; the deploy config is otherwise
+identical, so a Tiltfile differs between branches mostly in its `SERVICES` list.
+
+| Branch                 | Tactic |
+|------------------------|--------|
+| `main`                 | Vanilla demo, all 18 services |
+| `monolith`             | Core services baked into one fat container |
+| `service-reduction`    | Drops accounting, fraud-detection, kafka, recommendation |
+| `runtime-improve`      | `ad` moved to GraalVM |
+| `rust-product-catalog` | `product-catalog` rewritten in Rust |
+| `serverless`           | `quote` as a scale-to-zero Knative Service |
+
+`serverless` additionally bootstraps Knative Serving + Kourier into a local kind
+cluster on first `tilt up` (`k8s/scripts/install-knative-local.sh`); it no-ops
+against any non-kind context.
+
+[Tilt]: https://tilt.dev
+
 ## Documentation
 
 For detailed documentation, see [Demo Documentation][docs]. If you're curious
