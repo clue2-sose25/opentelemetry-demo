@@ -1,9 +1,9 @@
 # Knative Service for the quote tactic: unlike every other component, quote
 # is not part of the kubectl-managed Deployment set - it scales to zero and
 # is invoked on demand. Requires Knative Serving + Kourier already installed
-# in the cluster; devspace.yaml's before:deploy hook
+# in the cluster; the Tiltfile's install-knative-local local_resource
 # (k8s/scripts/install-knative-local.sh) bootstraps this on a local kind
-# cluster automatically.
+# cluster automatically, and this Service resource_deps on it.
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
